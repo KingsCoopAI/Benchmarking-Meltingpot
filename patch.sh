@@ -7,11 +7,11 @@ python_folder_name="${python_loc_name::-10}"lib/${python_version}
 echo $python_folder_name
 
 # Apply patches from gym to gymnasium.
-# sed -i '3s/gym/gymnasium/' "$python_folder_name"/site-packages/supersuit/generic_wrappers/frame_stack.py # Hardcoded observation space to uint8.
-# sed -i '2s/gym/gymnasium/' "$python_folder_name"/site-packages/supersuit/utils/frame_stack.py # Hardcoded observation space to uint8.
-# sed -i '182c\
-#         if isinstance(self._observations, dict):\
-#             return self._observations[agent]\
-#         else:\
-#             return self._observations[0][agent]' "$python_folder_name"/site-packages/pettingzoo/utils/conversions.py # Hardcoded observation space to uint8.
-sed -i '206s/obss, rews, dones, infos = self.env.step(self._actions)/obss, rews, dones, _, infos = self.env.step(self._actions)/' "$python_folder_name"/site-packages/pettingzoo/utils/conversions.py # Hardcoded observation space to uint8.
+sed -i '3s/gym/gymnasium/' "$python_folder_name"/site-packages/supersuit/generic_wrappers/frame_stack.py 
+sed -i '2s/gym/gymnasium/' "$python_folder_name"/site-packages/supersuit/utils/frame_stack.py 
+sed -i '182c\
+        if isinstance(self._observations, dict):\
+            return self._observations[agent]\
+        else:\
+            return self._observations[0][agent]' "$python_folder_name"/site-packages/pettingzoo/utils/conversions.py # judge if the observation is a dict or not.
+sed -i '206s/obss, rews, dones, infos = self.env.step(self._actions)/obss, rews, dones, _, infos = self.env.step(self._actions)/' "$python_folder_name"/site-packages/pettingzoo/utils/conversions.py # let additional dones away
