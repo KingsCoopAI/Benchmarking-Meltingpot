@@ -14,7 +14,9 @@
 """PettingZoo interface to meltingpot environments."""
 
 import functools
-
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from gymnasium import utils as gym_utils
 import matplotlib.pyplot as plt
 from meltingpot import substrate
@@ -22,7 +24,7 @@ from ml_collections import config_dict
 from pettingzoo import utils as pettingzoo_utils
 from pettingzoo.utils import wrappers
 
-from ..gym import utils
+from gyms import utils
 
 PLAYER_STR_FORMAT = 'player_{index}'
 MAX_CYCLES = 1000
@@ -50,7 +52,7 @@ class _MeltingPotPettingZooEnv(pettingzoo_utils.ParallelEnv):
   def __init__(self, env_config, max_cycles):
     self.env_config = config_dict.ConfigDict(env_config)
     self.max_cycles = max_cycles
-    self._env = substrate.build(
+    self._env = substrate.build_from_config(
         self.env_config, roles=self.env_config.default_player_roles)
     self._num_players = len(self._env.observation_spec())
     self.possible_agents = [

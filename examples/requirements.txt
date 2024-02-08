@@ -7,8 +7,11 @@ gymnasium
 matplotlib
 ml_collections
 numpy
-pettingzoo>=1.22.3
-ray[rllib,default]==2.5.0
-stable_baselines3
-supersuit>=3.7.2
+pettingzoo==1.14.0
+stable_baselines3==2.1.0
+supersuit==3.3.2
 torch
+jax==0.4.13
+jaxlib==0.4.13
+chex==0.1.7 # could switch with flax, used to fix jax version
+flax==0.6.11

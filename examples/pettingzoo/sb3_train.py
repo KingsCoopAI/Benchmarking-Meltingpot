@@ -13,7 +13,8 @@
 # limitations under the License.
 """Binary to run Stable Baselines 3 agents on meltingpot substrates."""
 
-import gymnasium as gym
+# import gymnasium as gym
+import gym
 from meltingpot import substrate
 import stable_baselines3
 from stable_baselines3.common import callbacks
@@ -24,7 +25,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from . import utils
+import utils
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
     "cpu")
@@ -112,20 +113,36 @@ def main():
   verbose = 3
   model_path = None  # Replace this with a saved model
 
+#   env = utils.parallel_env(
+#       max_cycles=rollout_len,
+#       env_config=env_config,
+#   )
+#   env = ss.observation_lambda_v0(env, lambda x, _: x["RGB"], lambda s: s["RGB"])
+#   env = ss.frame_stack_v1(env, num_frames)
+#   env = ss.pettingzoo_env_to_vec_env_v1(env)
+#   env = ss.concat_vec_envs_v1(
+#       env,
+#       num_vec_envs=num_envs,
+#       num_cpus=num_cpus,
+#       base_class="stable_baselines3")
+#   env = vec_env.VecMonitor(env)
+#   env = vec_env.VecTransposeImage(env, True)
+
   env = utils.parallel_env(
-      max_cycles=rollout_len,
-      env_config=env_config,
-  )
+        max_cycles=rollout_len,
+        env_config=env_config,
+    )
   env = ss.observation_lambda_v0(env, lambda x, _: x["RGB"], lambda s: s["RGB"])
   env = ss.frame_stack_v1(env, num_frames)
   env = ss.pettingzoo_env_to_vec_env_v1(env)
   env = ss.concat_vec_envs_v1(
-      env,
-      num_vec_envs=num_envs,
-      num_cpus=num_cpus,
-      base_class="stable_baselines3")
+    env, num_vec_envs=num_envs, num_cpus=num_cpus, base_class="stable_baselines3"
+)
   env = vec_env.VecMonitor(env)
   env = vec_env.VecTransposeImage(env, True)
+
+
+
 
   eval_env = utils.parallel_env(
       max_cycles=rollout_len,
@@ -139,6 +156,7 @@ def main():
       eval_env, num_vec_envs=1, num_cpus=1, base_class="stable_baselines3")
   eval_env = vec_env.VecMonitor(eval_env)
   eval_env = vec_env.VecTransposeImage(eval_env, True)
+  
   eval_freq = 100000 // (num_envs * num_agents)
 
   policy_kwargs = dict(
