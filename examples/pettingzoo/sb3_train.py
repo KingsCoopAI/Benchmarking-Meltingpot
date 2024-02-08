@@ -14,7 +14,11 @@
 """Binary to run Stable Baselines 3 agents on meltingpot substrates."""
 
 # import gymnasium as gym
+import sys
+import os
 import gym
+import wandb
+import socket
 from meltingpot import substrate
 import stable_baselines3
 from stable_baselines3.common import callbacks
@@ -24,12 +28,108 @@ import supersuit as ss
 import torch
 from torch import nn
 import torch.nn.functional as F
-
+import argparse
+import numpy as np
+import random
 import utils
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
     "cpu")
 
+def set_seed(seed: int = 42) -> None:
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    # When running on the CuDNN backend, two further options must be set
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    # Set a fixed value for the hash seed
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    print(f"Random seed set as {seed}")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser("Stable-Baselines3 PPO with Parameter Sharing")
+    parser.add_argument(
+        "--env-name",
+        type=str,
+        default="clean_up",
+        choices=['factory_commons__either_or', 'territory__inside_out', 'clean_up', 'chemistry__three_metabolic_cycles', 'chicken_in_the_matrix__repeated', 'chemistry__two_metabolic_cycles_with_distractors', 'territory__open', 'predator_prey__orchard', 'commons_harvest__open', 
+                 'running_with_scissors_in_the_matrix__one_shot', 'pure_coordination_in_the_matrix__arena', 'predator_prey__open', 'boat_race__eight_races', 'stag_hunt_in_the_matrix__arena', 'collaborative_cooking__crowded', 'predator_prey__alley_hunt', 'commons_harvest__closed', 
+                 'predator_prey__random_forest', 'pure_coordination_in_the_matrix__repeated', 'chicken_in_the_matrix__arena', 'gift_refinements', 'coop_mining', 'fruit_market__concentric_rivers', 'prisoners_dilemma_in_the_matrix__arena', 'rationalizable_coordination_in_the_matrix__repeated', 
+                 'prisoners_dilemma_in_the_matrix__repeated', 'externality_mushrooms__dense', 'rationalizable_coordination_in_the_matrix__arena', 'bach_or_stravinsky_in_the_matrix__arena', 'bach_or_stravinsky_in_the_matrix__repeated', 'collaborative_cooking__asymmetric', 
+                 'collaborative_cooking__cramped', 'paintball__king_of_the_hill', 'collaborative_cooking__forced', 'chemistry__two_metabolic_cycles', 'chemistry__three_metabolic_cycles_with_plentiful_distractors', 'paintball__capture_the_flag', 'commons_harvest__partnership', 
+                 'hidden_agenda', 'collaborative_cooking__figure_eight', 'running_with_scissors_in_the_matrix__arena', 'collaborative_cooking__circuit', 'coins', 'stag_hunt_in_the_matrix__repeated', 'daycare', 'territory__rooms', 'running_with_scissors_in_the_matrix__repeated', 
+                 'collaborative_cooking__ring', 'allelopathic_harvest__open'],
+        help="The SSD environment to use",
+    )
+    parser.add_argument(
+        "--num-agents",
+        type=int,
+        default=5,
+        help="The number of agents",
+    )
+    parser.add_argument(
+        "--num-cpus",
+        type=int,
+        default=4,
+        help="The number of cpus",
+    )
+    parser.add_argument(
+        "--num-envs",
+        type=int,
+        default=12,
+        help="The number of envs",
+    )
+    parser.add_argument(
+        "--kl-threshold",
+        type=float,
+        default=0.01,
+        help="The number of envs",
+    )
+    parser.add_argument(
+        "--rollout-len",
+        type=int,
+        default=1000,
+        help="length of training rollouts AND length at which env is reset",
+    )
+    parser.add_argument(
+        "--total-timesteps",
+        type=int,
+        default=5e8,
+        help="Number of environment timesteps",
+    )
+    parser.add_argument(
+        "--use-collective-reward",
+        type=bool,
+        default=False,
+        help="Give each agent the collective reward across all agents",
+    )
+    parser.add_argument(
+        "--inequity-averse-reward",
+        type=bool,
+        default=False,
+        help="Use inequity averse rewards from 'Inequity aversion \
+            improves cooperation in intertemporal social dilemmas'",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=5,
+        help="Advantageous inequity aversion factor",
+    )
+    parser.add_argument(
+        "--beta",
+        type=float,
+        default=0.05,
+        help="Disadvantageous inequity aversion factor",
+    )
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--user_name", type=str, default="1160677229")
+    parser.add_argument("--model", type=str, default='baseline')
+    args = parser.parse_args()
+    return args
 
 # Use this with lambda wrapper returning observations only
 class CustomCNN(torch_layers.BaseFeaturesExtractor):
@@ -82,9 +182,11 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
     return features
 
 
-def main():
+def main(args):
   # Config
-  env_name = "commons_harvest__open"
+  set_seed(args.seed)
+  model = args.model
+  env_name = args.env_name
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
@@ -171,6 +273,16 @@ def main():
 
   tensorboard_log = "./results/sb3/harvest_open_ppo_paramsharing"
 
+
+  run = wandb.init(config=args,
+                         project="MeltingPot_pytorch",
+                         entity=args.user_name, 
+                         notes=socket.gethostname(),
+                         name=str(env_name) +"_"+ str(model) + "_" + str(args.seed),
+                         group=str(env_name) +"_"+ str(model),
+                         dir="./",
+                         reinit=True)
+  
   model = stable_baselines3.PPO(
       "CnnPolicy",
       env=env,
@@ -200,4 +312,4 @@ def main():
 
 
 if __name__ == "__main__":
-  main()
+  main(args=parse_args())
