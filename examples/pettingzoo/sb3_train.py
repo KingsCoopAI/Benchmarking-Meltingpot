@@ -74,13 +74,13 @@ def parse_args():
     parser.add_argument(
         "--num-cpus",
         type=int,
-        default=4,
+        default=64,
         help="The number of cpus",
     )
     parser.add_argument(
         "--num-envs",
         type=int,
-        default=12,
+        default=48,
         help="The number of envs",
     )
     parser.add_argument(
@@ -195,8 +195,8 @@ def main(args):
   num_agents = env.max_num_agents
 
   # Training
-  num_cpus = 1  # number of cpus
-  num_envs = 1  # number of parallel multi-agent environments
+  num_cpus = args.num_cpus  # number of cpus
+  num_envs = args.num_envs  # number of parallel multi-agent environments
   # number of frames to stack together; use >4 to avoid automatic
   # VecTransposeImage
   num_frames = 4
