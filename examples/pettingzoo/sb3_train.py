@@ -72,6 +72,12 @@ def parse_args():
         help="The modified environment config to use",
     )
     parser.add_argument(
+        "--human-env-config",
+        type=str,
+        default="coins_human",
+        help="The human environment config",
+    )
+    parser.add_argument(
         "--num-agents",
         type=int,
         default=5,
@@ -195,8 +201,9 @@ def main(args):
   set_seed(args.seed)
   model = args.model
   env_name = args.env_name
-  modified_env_config = substrate.get_config(args.modified_env_config)
-  modified_env = utils.parallel_env(modified_env_config)
+  llm_env_config = substrate.get_config(args.modified_env_config)
+  modified_env = utils.parallel_env(llm_env_config)
+  human_env_config = substrate.get_config(args.human_env_config)
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
@@ -247,8 +254,13 @@ def main(args):
   elif model == "llm":
     env = utils.parallel_env(
             max_cycles=rollout_len,
-            env_config=modified_env_config,
+            env_config=llm_env_config,
         )
+  elif model == "human":
+    env = utils.parallel_env(
+        max_cycles=rollout_len,
+        env_config=human_env_config,
+    )
   env = ss.observation_lambda_v0(env, lambda x, _: x["RGB"], lambda s: s["RGB"])
   env = ss.frame_stack_v1(env, num_frames)
   env = ss.pettingzoo_env_to_vec_env_v1(env)
