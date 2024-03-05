@@ -82,6 +82,7 @@ SUBSTRATES: Set[str] = frozenset({
     'clean_up',
     'coins',
     'coins_llm',
+    'coins_human',
     'collaborative_cooking__asymmetric',
     'collaborative_cooking__circuit',
     'collaborative_cooking__cramped',
