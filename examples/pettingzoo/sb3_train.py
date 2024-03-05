@@ -33,7 +33,7 @@ import argparse
 import numpy as np
 import random
 import utils
-
+from wrappers.transform import obs2attr
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
     "cpu")
 
@@ -55,7 +55,7 @@ def parse_args():
     parser.add_argument(
         "--env-name",
         type=str,
-        default="clean_up",
+        default="coins",
         choices=['factory_commons__either_or', 'territory__inside_out', 'clean_up', 'chemistry__three_metabolic_cycles', 'chicken_in_the_matrix__repeated', 'chemistry__two_metabolic_cycles_with_distractors', 'territory__open', 'predator_prey__orchard', 'commons_harvest__open', 
                  'running_with_scissors_in_the_matrix__one_shot', 'pure_coordination_in_the_matrix__arena', 'predator_prey__open', 'boat_race__eight_races', 'stag_hunt_in_the_matrix__arena', 'collaborative_cooking__crowded', 'predator_prey__alley_hunt', 'commons_harvest__closed', 
                  'predator_prey__random_forest', 'pure_coordination_in_the_matrix__repeated', 'chicken_in_the_matrix__arena', 'gift_refinements', 'coop_mining', 'fruit_market__concentric_rivers', 'prisoners_dilemma_in_the_matrix__arena', 'rationalizable_coordination_in_the_matrix__repeated', 
@@ -66,6 +66,12 @@ def parse_args():
         help="The SSD environment to use",
     )
     parser.add_argument(
+        "--modified-env-config",
+        type=str,
+        default="coins_llm",
+        help="The modified environment config to use",
+    )
+    parser.add_argument(
         "--num-agents",
         type=int,
         default=5,
@@ -74,13 +80,13 @@ def parse_args():
     parser.add_argument(
         "--num-cpus",
         type=int,
-        default=64,
+        default=4,
         help="The number of cpus",
     )
     parser.add_argument(
         "--num-envs",
         type=int,
-        default=48,
+        default=2,
         help="The number of envs",
     )
     parser.add_argument(
@@ -129,6 +135,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--user_name", type=str, default="1160677229")
     parser.add_argument("--model", type=str, default='baseline')
+    parser.add_argument("--alg", type=str, default='PPO', choices=['PPO', 'A2C'])
     args = parser.parse_args()
     return args
 
@@ -188,6 +195,8 @@ def main(args):
   set_seed(args.seed)
   model = args.model
   env_name = args.env_name
+  modified_env_config = substrate.get_config(args.modified_env_config)
+  modified_env = utils.parallel_env(modified_env_config)
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
@@ -215,7 +224,7 @@ def main(args):
   grad_clip = 40
   verbose = 3
   model_path = None  # Replace this with a saved model
-
+  alg = args.alg
 #   env = utils.parallel_env(
 #       max_cycles=rollout_len,
 #       env_config=env_config,
@@ -230,11 +239,16 @@ def main(args):
 #       base_class="stable_baselines3")
 #   env = vec_env.VecMonitor(env)
 #   env = vec_env.VecTransposeImage(env, True)
-
-  env = utils.parallel_env(
+  if model == "baseline":
+    env = utils.parallel_env(
         max_cycles=rollout_len,
         env_config=env_config,
     )
+  elif model == "llm":
+    env = utils.parallel_env(
+            max_cycles=rollout_len,
+            env_config=modified_env_config,
+        )
   env = ss.observation_lambda_v0(env, lambda x, _: x["RGB"], lambda s: s["RGB"])
   env = ss.frame_stack_v1(env, num_frames)
   env = ss.pettingzoo_env_to_vec_env_v1(env)
@@ -283,8 +297,9 @@ def main(args):
                          group=str(env_name) +"_"+ str(model),
                          dir="./",
                          reinit=True)
-  
-  model = stable_baselines3.PPO(
+  if alg == "PPO":
+    model = stable_baselines3.PPO
+    model = model(
       "CnnPolicy",
       env=env,
       learning_rate=lr,
@@ -300,6 +315,21 @@ def main(args):
       tensorboard_log=tensorboard_log,
       verbose=verbose,
   )
+  elif alg == "A2C":
+    model = stable_baselines3.A2C
+    model = model(
+      "CnnPolicy",
+      env=env,
+      learning_rate=lr,
+      n_steps=rollout_len,
+      gamma=gamma,
+      gae_lambda=gae_lambda,
+      ent_coef=ent_coef,
+      max_grad_norm=grad_clip,
+      policy_kwargs=policy_kwargs,
+      tensorboard_log=tensorboard_log,
+      verbose=verbose,
+    )
   if model_path is not None:
     model = stable_baselines3.PPO.load(model_path, env=env)
   eval_callback = callbacks.EvalCallback(

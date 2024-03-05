@@ -22,7 +22,7 @@ from ray import tune
 from ray.rllib.algorithms import ppo
 from ray.rllib.policy import policy
 
-from . import utils
+import utils
 
 
 def get_config(
@@ -66,7 +66,7 @@ def get_config(
   # Use the raw observations/actions as defined by the environment.
   config.preprocessor_pref = None
   # Use TensorFlow as the tensor framework.
-  config = config.framework("tf")
+  config = config.framework("pytorch")
   # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
   config.num_gpus = int(os.environ.get("RLLIB_NUM_GPUS", "0"))
   config.log_level = "DEBUG"

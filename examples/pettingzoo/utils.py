@@ -23,7 +23,7 @@ from meltingpot import substrate
 from ml_collections import config_dict
 from pettingzoo import utils as pettingzoo_utils
 from pettingzoo.utils import wrappers
-
+from wrappers.transform import obs2attr
 from gyms import utils
 
 PLAYER_STR_FORMAT = 'player_{index}'
@@ -94,6 +94,7 @@ class _MeltingPotPettingZooEnv(pettingzoo_utils.ParallelEnv):
       self.agents = []
 
     observations = utils.timestep_to_observations(timestep)
+    
     return observations, rewards, dones, dones, infos
 
   def close(self):

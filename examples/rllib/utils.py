@@ -14,7 +14,9 @@
 """MeltingPotEnv as a MultiAgentEnv wrapper to interface with RLLib."""
 
 from typing import Tuple
-
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import dm_env
 import dmlab2d
 from gymnasium import spaces
@@ -26,7 +28,7 @@ from ray.rllib import algorithms
 from ray.rllib.env import multi_agent_env
 from ray.rllib.policy import sample_batch
 
-from ..gym import utils
+from gyms import utils
 
 PLAYER_STR_FORMAT = 'player_{index}'
 

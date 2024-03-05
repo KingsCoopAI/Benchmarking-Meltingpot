@@ -9,6 +9,7 @@ echo $python_folder_name
 # Apply patches from gym to gymnasium.
 sed -i '3s/gym/gymnasium/' "$python_folder_name"/site-packages/supersuit/generic_wrappers/frame_stack.py 
 sed -i '2s/gym/gymnasium/' "$python_folder_name"/site-packages/supersuit/utils/frame_stack.py 
+sed -i '1s/import gym/import gymnasium as gym/' "$python_folder_name"/site-packages/supersuit/vector/utils/space_wrapper.py
 sed -i '182c\
         if isinstance(self._observations, dict):\
             return self._observations[agent]\
