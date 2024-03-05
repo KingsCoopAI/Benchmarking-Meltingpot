@@ -146,6 +146,7 @@ class IndependentPPO(OnPolicyAlgorithm):
         while num_timesteps < total_timesteps:
             last_obs = self.collect_rollouts(last_obs, callbacks)
             num_timesteps += self.num_envs * self.n_steps
+            SW_ep_rew_mean = 0
             for polid, policy in enumerate(self.policies):
                 policy._update_current_progress_remaining(
                     policy.num_timesteps, total_timesteps
@@ -159,7 +160,7 @@ class IndependentPPO(OnPolicyAlgorithm):
                     wandb.log({f"{polid}/total_timesteps": policy.num_timesteps}, step=num_timesteps)
                     
 
-
+                    SW_ep_rew_mean += safe_mean([ep_info["r"] for ep_info in policy.ep_info_buffer])
 
 
                     policy.logger.record("policy_id", polid, exclude="tensorboard")
@@ -196,7 +197,8 @@ class IndependentPPO(OnPolicyAlgorithm):
                     policy.logger.dump(step=policy.num_timesteps)
 
                 policy.train()
-
+            wandb.log({"SW_ep_rew_mean": SW_ep_rew_mean/self.num_agents}, step=num_timesteps)
+            wandb.log({"SW_ep_rew_total": SW_ep_rew_mean}, step=num_timesteps)
         for callback in callbacks:
             callback.on_training_end()
 
