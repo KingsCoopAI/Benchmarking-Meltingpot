@@ -25,6 +25,7 @@ import stable_baselines3
 from stable_baselines3.common import callbacks
 from stable_baselines3.common import torch_layers
 from stable_baselines3.common import vec_env
+from stable_baselines3.independent_ppo import IndependentPPO
 import supersuit as ss
 import torch
 from torch import nn
@@ -190,7 +191,8 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
   def forward(self, observations) -> torch.Tensor:
     # Convert to tensor, rescale to [0, 1], and convert from
     #   B x H x W x C to B x C x H x W
-    observations = observations.permute(0, 3, 1, 2)
+    if observations.shape[1] != 12:
+      observations = observations.permute(0, 3, 1, 2)
     features = self.conv(observations)
     features = F.relu(self.fc1(features))
     features = F.relu(self.fc2(features))
@@ -318,8 +320,7 @@ def main(args):
                          dir="./",
                          reinit=True)
   if alg == "PPO":
-    model = stable_baselines3.PPO
-    model = model(
+    model = IndependentPPO(
       "CnnPolicy",
       env=env,
       learning_rate=lr,
@@ -334,6 +335,7 @@ def main(args):
       policy_kwargs=policy_kwargs,
       tensorboard_log=tensorboard_log,
       verbose=verbose,
+      num_agents=num_agents
   )
   elif alg == "A2C":
     model = stable_baselines3.A2C
@@ -351,15 +353,15 @@ def main(args):
       verbose=verbose,
     )
   if model_path is not None:
-    model = stable_baselines3.PPO.load(model_path, env=env)
+    model = IndependentPPO.load(model_path, env=env)
   eval_callback = callbacks.EvalCallback(
       eval_env, eval_freq=eval_freq, best_model_save_path=tensorboard_log)
-  model.learn(total_timesteps=total_timesteps, callback=eval_callback)
+  model.learn(total_timesteps=total_timesteps)
 
   logdir = model.logger.dir
   model.save(logdir + "/model")
   del model
-  stable_baselines3.PPO.load(logdir + "/model")
+  IndependentPPO.load(logdir + "/model")
 
 
 if __name__ == "__main__":

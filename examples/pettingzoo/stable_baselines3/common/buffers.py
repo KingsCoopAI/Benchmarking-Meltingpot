@@ -457,7 +457,7 @@ class RolloutBuffer(BaseBuffer):
         # Reshape to handle multi-dim and discrete action spaces, see GH #970 #1392
         action = action.reshape((self.n_envs, self.action_dim))
 
-        self.observations[self.pos] = np.array(obs).copy()
+        self.observations[self.pos] = np.transpose(np.array(obs).copy(), (0,3,1,2))
         self.actions[self.pos] = np.array(action).copy()
         self.rewards[self.pos] = np.array(reward).copy()
         self.episode_starts[self.pos] = np.array(episode_start).copy()

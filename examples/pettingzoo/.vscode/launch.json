@@ -9,7 +9,7 @@
             "name": "Python: main",
             "type": "python",
             "request": "launch",
-            "program": "sb3_train.py",
+            "program": "sb3_independent.py",
             "console": "integratedTerminal",
             "python": "/home/shuqingshi/miniconda3/envs/meltingpot/bin/python",
             "justMyCode": false,
