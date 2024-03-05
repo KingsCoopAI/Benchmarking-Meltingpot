@@ -202,7 +202,7 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
 def main(args):
   # Config
   set_seed(args.seed)
-  model = args.model
+  str_model = args.model
   env_name = args.env_name
   llm_env_config = substrate.get_config(args.modified_env_config)
   modified_env = utils.parallel_env(llm_env_config)
@@ -210,7 +210,7 @@ def main(args):
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
-  total_timesteps = 2000000
+  total_timesteps = 2000
   num_agents = env.max_num_agents
   using_same_eval = args.using_same_eval
 
@@ -250,19 +250,19 @@ def main(args):
 #       base_class="stable_baselines3")
 #   env = vec_env.VecMonitor(env)
 #   env = vec_env.VecTransposeImage(env, True)
-  if model == "baseline":
+  if str_model == "baseline":
     parallel_env = utils.parallel_env(
         max_cycles=rollout_len,
         env_config=env_config,
     )
-  elif model == "llm":
+  elif str_model == "llm":
     llm_env_config = str(env_name)+ "_llm"
     llm_env_config = substrate.get_config(llm_env_config)
     parallel_env = utils.parallel_env(
             max_cycles=rollout_len,
             env_config=llm_env_config,
         )
-  elif model == "human":
+  elif str_model == "human":
     human_env_config = str(env_name)+ "_human"
     human_env_config = substrate.get_config(human_env_config)
     parallel_env = utils.parallel_env(
@@ -315,8 +315,8 @@ def main(args):
                          project="MeltingPot_pytorch",
                          entity=args.user_name, 
                          notes=socket.gethostname(),
-                         name=str(env_name) +"_"+ str(model) + "_" + str(args.seed),
-                         group=str(env_name) +"_"+ str(model),
+                         name=str(env_name) +"_"+ str(str_model) + "_" + str(args.seed),
+                         group=str(env_name) +"_"+ str(str_model),
                          dir="./",
                          reinit=True)
   if alg == "PPO":
@@ -358,10 +358,14 @@ def main(args):
       eval_env, eval_freq=eval_freq, best_model_save_path=tensorboard_log)
   model.learn(total_timesteps=total_timesteps)
 
-  logdir = model.logger.dir
-  model.save(logdir + "/model")
+  save_path = './policy_model/sb3/' + str(env_name) + "_" + str(str_model) + "_" + str(args.seed)
+  model.save(save_path)
   del model
-  IndependentPPO.load(logdir + "/model")
+  IndependentPPO.load(path=save_path,
+                      num_agents=num_agents,
+                      env=env,
+                      policy="CnnPolicy",
+                      n_steps=rollout_len,)
 
 
 if __name__ == "__main__":
