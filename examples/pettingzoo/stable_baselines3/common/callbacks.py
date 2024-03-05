@@ -2,7 +2,7 @@ import os
 import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Union
-
+import wandb
 import gymnasium as gym
 import numpy as np
 
@@ -484,6 +484,11 @@ class EvalCallback(EventCallback):
                 print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={mean_reward:.2f} +/- {std_reward:.2f}")
                 print(f"Episode length: {mean_ep_length:.2f} +/- {std_ep_length:.2f}")
             # Add to current Logger
+                
+            wandb.log({"eval/mean_reward": float(mean_reward)})
+            wandb.log({"eval/std_reward": float(std_reward)})
+            wandb.log({"eval/mean_ep_length": mean_ep_length})
+
             self.logger.record("eval/mean_reward", float(mean_reward))
             self.logger.record("eval/mean_ep_length", mean_ep_length)
 
