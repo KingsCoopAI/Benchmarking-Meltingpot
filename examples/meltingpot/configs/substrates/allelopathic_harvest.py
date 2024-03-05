@@ -46,7 +46,7 @@ PrefabConfig = game_object_utils.PrefabConfig
 # Warning: setting `_ENABLE_DEBUG_OBSERVATIONS = True` may cause slowdown.
 _ENABLE_DEBUG_OBSERVATIONS = False
 
-# How many different colors of berries.
+# How many different colors of berries 
 NUM_BERRY_TYPES = 3
 
 DEFAULT_ASCII_MAP = """
