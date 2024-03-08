@@ -102,7 +102,7 @@ class _MeltingPotPettingZooEnv(pettingzoo_utils.ParallelEnv):
     self._env.close()
 
   def render(self, mode='human', filename=None):
-    rgb_arr = self.state()['WORLD.RGB']
+    rgb_arr = self.state()[-1]['WORLD.RGB']
     if mode == 'human':
       plt.cla()
       plt.imshow(rgb_arr, interpolation='nearest')

@@ -1,19 +1,3 @@
-# Copyright 2022 DeepMind Technologies Limited.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""Binary to run Stable Baselines 3 agents on meltingpot substrates."""
-
-# import gymnasium as gym
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -25,6 +9,7 @@ import stable_baselines3
 from stable_baselines3.common import callbacks
 from stable_baselines3.common import torch_layers
 from stable_baselines3.common import vec_env
+from stable_baselines3.independent_ppo import IndependentPPO
 import supersuit as ss
 import torch
 from torch import nn
@@ -34,6 +19,7 @@ import numpy as np
 import random
 import utils
 from wrappers.transform import obs2attr
+import time
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
     "cpu")
 
@@ -48,7 +34,6 @@ def set_seed(seed: int = 42) -> None:
     # Set a fixed value for the hash seed
     os.environ["PYTHONHASHSEED"] = str(seed)
     print(f"Random seed set as {seed}")
-
 
 def parse_args():
     parser = argparse.ArgumentParser("Stable-Baselines3 PPO with Parameter Sharing")
@@ -66,18 +51,6 @@ def parse_args():
         help="The SSD environment to use",
     )
     parser.add_argument(
-        "--modified-env-config",
-        type=str,
-        default="coins_llm",
-        help="The modified environment config to use",
-    )
-    parser.add_argument(
-        "--human-env-config",
-        type=str,
-        default="coins_human",
-        help="The human environment config",
-    )
-    parser.add_argument(
         "--num-agents",
         type=int,
         default=5,
@@ -92,7 +65,7 @@ def parse_args():
     parser.add_argument(
         "--num-envs",
         type=int,
-        default=2,
+        default=4,
         help="The number of envs",
     )
     parser.add_argument(
@@ -142,11 +115,10 @@ def parse_args():
     parser.add_argument("--user_name", type=str, default="1160677229")
     parser.add_argument("--model", type=str, default='baseline')
     parser.add_argument("--alg", type=str, default='PPO', choices=['PPO', 'A2C'])
-    parser.add_argument("--using_same_eval", type=bool, default=True)
+    parser.add_argument("--eval_freq", type=int, default=10000000)
     args = parser.parse_args()
     return args
 
-# Use this with lambda wrapper returning observations only
 class CustomCNN(torch_layers.BaseFeaturesExtractor):
   """Class describing a custom feature extractor."""
 
@@ -190,7 +162,8 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
   def forward(self, observations) -> torch.Tensor:
     # Convert to tensor, rescale to [0, 1], and convert from
     #   B x H x W x C to B x C x H x W
-    observations = observations.permute(0, 3, 1, 2)
+    if observations.shape[1] != 12:
+      observations = observations.permute(0, 3, 1, 2)
     features = self.conv(observations)
     features = F.relu(self.fc1(features))
     features = F.relu(self.fc2(features))
@@ -200,20 +173,14 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
 def main(args):
   # Config
   set_seed(args.seed)
-  model = args.model
+  str_model = args.model
   env_name = args.env_name
-  llm_env_config = substrate.get_config(args.modified_env_config)
-  modified_env = utils.parallel_env(llm_env_config)
-  human_env_config = substrate.get_config(args.human_env_config)
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
-  total_timesteps = 4000
   num_agents = env.max_num_agents
-  using_same_eval = args.using_same_eval
-
+  eval_freq = args.eval_freq
   # Training
-  num_cpus = args.num_cpus  # number of cpus
   num_envs = args.num_envs  # number of parallel multi-agent environments
   # number of frames to stack together; use >4 to avoid automatic
   # VecTransposeImage
@@ -234,54 +201,8 @@ def main(args):
   verbose = 3
   model_path = None  # Replace this with a saved model
   alg = args.alg
-#   env = utils.parallel_env(
-#       max_cycles=rollout_len,
-#       env_config=env_config,
-#   )
-#   env = ss.observation_lambda_v0(env, lambda x, _: x["RGB"], lambda s: s["RGB"])
-#   env = ss.frame_stack_v1(env, num_frames)
-#   env = ss.pettingzoo_env_to_vec_env_v1(env)
-#   env = ss.concat_vec_envs_v1(
-#       env,
-#       num_vec_envs=num_envs,
-#       num_cpus=num_cpus,
-#       base_class="stable_baselines3")
-#   env = vec_env.VecMonitor(env)
-#   env = vec_env.VecTransposeImage(env, True)
-  if model == "baseline":
-    parallel_env = utils.parallel_env(
-        max_cycles=rollout_len,
-        env_config=env_config,
-    )
-  elif model == "llm":
-    llm_env_config = str(env_name)+ "_llm"
-    llm_env_config = substrate.get_config(llm_env_config)
-    parallel_env = utils.parallel_env(
-            max_cycles=rollout_len,
-            env_config=llm_env_config,
-        )
-  elif model == "human":
-    human_env_config = str(env_name)+ "_human"
-    human_env_config = substrate.get_config(human_env_config)
-    parallel_env = utils.parallel_env(
-        max_cycles=rollout_len,
-        env_config=human_env_config,
-    )
-  env = ss.observation_lambda_v0(parallel_env, lambda x, _: x["RGB"], lambda s: s["RGB"])
-  env = ss.frame_stack_v1(env, num_frames)
-  env = ss.pettingzoo_env_to_vec_env_v1(env)
-  env = ss.concat_vec_envs_v1(
-    env, num_vec_envs=num_envs, num_cpus=num_cpus, base_class="stable_baselines3"
-)
-  env = vec_env.VecMonitor(env)
-  env = vec_env.VecTransposeImage(env, True)
 
-
-
-  if using_same_eval:
-    eval_env = parallel_env
-  else:
-    eval_env = utils.parallel_env(
+  eval_env = utils.parallel_env(
         max_cycles=rollout_len,
         env_config=env_config,
     )
@@ -294,7 +215,7 @@ def main(args):
   eval_env = vec_env.VecMonitor(eval_env)
   eval_env = vec_env.VecTransposeImage(eval_env, True)
   
-  eval_freq = 100000 // (num_envs * num_agents)
+  
 
   policy_kwargs = dict(
       features_extractor_class=CustomCNN,
@@ -313,15 +234,14 @@ def main(args):
                          project="MeltingPot_pytorch",
                          entity=args.user_name, 
                          notes=socket.gethostname(),
-                         name=str(env_name) +"_"+ str(model) + "_" + str(args.seed),
-                         group=str(env_name) +"_"+ str(model),
+                         name=str(env_name) +"_"+ str(str_model) + "_" + str(args.seed),
+                         group="Evaluation_" + str(env_name) +"_"+ str(str_model),
                          dir="./",
                          reinit=True)
   if alg == "PPO":
-    model = stable_baselines3.PPO
-    model = model(
+    model = IndependentPPO(
       "CnnPolicy",
-      env=env,
+      env=eval_env,
       learning_rate=lr,
       n_steps=rollout_len,
       batch_size=batch_size,
@@ -334,33 +254,44 @@ def main(args):
       policy_kwargs=policy_kwargs,
       tensorboard_log=tensorboard_log,
       verbose=verbose,
+      num_agents=num_agents
   )
-  elif alg == "A2C":
-    model = stable_baselines3.A2C
-    model = model(
-      "CnnPolicy",
-      env=env,
-      learning_rate=lr,
-      n_steps=rollout_len,
-      gamma=gamma,
-      gae_lambda=gae_lambda,
-      ent_coef=ent_coef,
-      max_grad_norm=grad_clip,
-      policy_kwargs=policy_kwargs,
-      tensorboard_log=tensorboard_log,
-      verbose=verbose,
-    )
-  if model_path is not None:
-    model = stable_baselines3.PPO.load(model_path, env=env)
-  eval_callback = callbacks.EvalCallback(
-      eval_env, eval_freq=eval_freq, best_model_save_path=tensorboard_log)
-  model.learn(total_timesteps=total_timesteps, callback=eval_callback)
 
-  logdir = model.logger.dir
-  model.save(logdir + "/model")
-  del model
-  stable_baselines3.PPO.load(logdir + "/model")
+  save_path = './policy_model/sb3/' + str(env_name) + "_" + str(str_model) + "_" + str(args.seed)
+  eval_model = IndependentPPO.load(path=save_path,
+                                     num_agents=num_agents,
+                                     env=eval_env,
+                                     policy="CnnPolicy",
+                                     n_steps=rollout_len,)
 
-
+  total_timestep = 0
+  initial_time = time.time()
+  while total_timestep <= eval_freq:
+    obs = eval_env.reset()
+    done = np.array([False] * num_agents)
+    ep_rew = []
+    ep_l = 0
+    while not done.any():
+      ep_l += 1
+      total_timestep += 1 * num_envs
+      actions = []
+      for i in range(num_agents):
+        action, _ = eval_model.policies[i].predict(obs[i])
+        actions.append(action)
+      obs, reward, done, info = eval_env.step(np.array(actions))
+      ep_rew.append(reward)
+      if done.any():
+        current_time = time.time()
+        fps = total_timestep / (current_time - initial_time)
+        for polid in range(num_agents):
+            wandb.log({f"{polid}/fps": fps}, step=total_timestep)
+            wandb.log({f"{polid}/ep_rew_mean": np.mean(np.array(ep_rew)[:,polid])}, step=total_timestep)
+            wandb.log({f"{polid}/ep_len_mean": ep_l}, step=total_timestep)
+            wandb.log({f"{polid}/time_elapsed": int(time.time() - initial_time)}, step=total_timestep)
+            wandb.log({f"{polid}/total_timesteps": total_timestep}, step=total_timestep)
+        wandb.log({"SW_ep_rew_mean": np.mean(np.array(ep_rew))}, step=total_timestep)
+        wandb.log({"SW_ep_rew_total": np.mean(np.sum(np.array(ep_rew),axis=1))}, step=total_timestep)
+        initial_time = current_time
 if __name__ == "__main__":
   main(args=parse_args())
+
