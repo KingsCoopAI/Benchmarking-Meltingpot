@@ -111,7 +111,7 @@ def parse_args():
     parser.add_argument(
         "--total-timesteps",
         type=int,
-        default=5e8,
+        default=10000000,
         help="Number of environment timesteps",
     )
     parser.add_argument(
@@ -210,7 +210,7 @@ def main(args):
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
-  total_timesteps = 4000
+  total_timesteps = args.total_timesteps
   num_agents = env.max_num_agents
   using_same_eval = args.using_same_eval
 
