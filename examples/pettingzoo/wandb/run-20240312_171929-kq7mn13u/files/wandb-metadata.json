@@ -1,0 +1,105 @@
+{
+    "os": "Linux-6.5.0-17-generic-x86_64-with-glibc2.35",
+    "python": "3.10.0",
+    "heartbeatAt": "2024-03-12T17:19:30.078607",
+    "startedAt": "2024-03-12T17:19:29.472599",
+    "docker": null,
+    "cuda": null,
+    "args": [
+        "--model",
+        "llm",
+        "--is_download",
+        "True"
+    ],
+    "state": "running",
+    "program": "sb3_independent.py",
+    "codePathLocal": "sb3_independent.py",
+    "codePath": "examples/pettingzoo/sb3_independent.py",
+    "git": {
+        "remote": "https://github.com/stevenqing/meltingpot.git",
+        "commit": "a7ba55549a02a1010260a8cda16ad2089400590e"
+    },
+    "email": null,
+    "root": "/home/shuqingshi/Downloads/meltingpot",
+    "host": "nmslap007078",
+    "username": "shuqingshi",
+    "executable": "/home/shuqingshi/miniconda3/envs/meltingpot/bin/python",
+    "cpu_count": 10,
+    "cpu_count_logical": 12,
+    "cpu_freq": {
+        "current": 1204.9442499999998,
+        "min": 400.0,
+        "max": 4333.333333333333
+    },
+    "cpu_freq_per_core": [
+        {
+            "current": 400.0,
+            "min": 400.0,
+            "max": 5200.0
+        },
+        {
+            "current": 510.089,
+            "min": 400.0,
+            "max": 5200.0
+        },
+        {
+            "current": 399.782,
+            "min": 400.0,
+            "max": 5200.0
+        },
+        {
+            "current": 399.73,
+            "min": 400.0,
+            "max": 5200.0
+        },
+        {
+            "current": 1286.784,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1277.488,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1099.828,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1211.22,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1277.469,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1232.539,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1274.799,
+            "min": 400.0,
+            "max": 3900.0
+        },
+        {
+            "current": 1229.225,
+            "min": 400.0,
+            "max": 3900.0
+        }
+    ],
+    "disk": {
+        "/": {
+            "total": 913.7511215209961,
+            "used": 103.90893936157227
+        }
+    },
+    "memory": {
+        "total": 30.936939239501953
+    }
+}

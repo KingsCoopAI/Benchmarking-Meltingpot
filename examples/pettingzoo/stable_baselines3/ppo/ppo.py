@@ -100,6 +100,8 @@ class PPO(OnPolicyAlgorithm):
         seed: Optional[int] = None,
         device: Union[th.device, str] = "auto",
         _init_setup_model: bool = True,
+        polid: int = 0,
+        is_download: bool = False,
     ):
         super().__init__(
             policy,
@@ -159,7 +161,8 @@ class PPO(OnPolicyAlgorithm):
         self.clip_range_vf = clip_range_vf
         self.normalize_advantage = normalize_advantage
         self.target_kl = target_kl
-
+        self.polid = polid
+        self.is_download = is_download
         if _init_setup_model:
             self._setup_model()
 
@@ -197,7 +200,7 @@ class PPO(OnPolicyAlgorithm):
         for epoch in range(self.n_epochs):
             approx_kl_divs = []
             # Do a complete pass on the rollout buffer
-            for rollout_data in self.rollout_buffer.get(self.batch_size):
+            for rollout_data in self.rollout_buffer.get(self.batch_size, polid=self.polid, is_download=self.is_download):
                 actions = rollout_data.actions
                 if isinstance(self.action_space, spaces.Discrete):
                     # Convert discrete action from float to long

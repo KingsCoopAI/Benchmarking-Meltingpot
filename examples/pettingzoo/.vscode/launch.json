@@ -14,7 +14,10 @@
             "console": "integratedTerminal",
             "python": "/home/shuqingshi/miniconda3/envs/meltingpot/bin/python",
             "justMyCode": false,
-            "args": ["--model", "llm"]
+            "args": ["--model", 
+                    "llm",
+                    "--is_download",
+                    "True",]
 
         },
     ]

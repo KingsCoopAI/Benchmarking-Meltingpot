@@ -1,0 +1,19 @@
+/home/shuqingshi/Downloads/meltingpot/examples/pettingzoo/stable_baselines3/common/vec_env/patch_gym.py:49: UserWarning: You provided an OpenAI Gym environment. We strongly recommend transitioning to Gymnasium environments. Stable-Baselines3 is automatically wrapping your environments in a compatibility layer, which could potentially cause issues.
+  warnings.warn(
+Using cpu device
+Wrapping the env in a VecTransposeImage.
+Using cpu device
+Wrapping the env in a VecTransposeImage.
+Logging to ./results/sb3/harvest_open_ppo_paramsharing/IndependentPPO_1
+Logging to ./results/sb3/harvest_open_ppo_paramsharing/IndependentPPO_1/policy_1
+Logging to ./results/sb3/harvest_open_ppo_paramsharing/IndependentPPO_1/policy_2
+---------------------------------
+| policy_id          | 0        |
+| rollout/           |          |
+|    ep_len_mean     | 1e+03    |
+|    ep_rew_mean     | 17.0     |
+| time/              |          |
+|    fps             | 133      |
+|    iterations      | 2000     |
+|    time_elapsed    | 15       |
+|    total_timesteps | 2000     |

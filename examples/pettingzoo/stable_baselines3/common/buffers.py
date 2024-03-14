@@ -1,6 +1,8 @@
 import warnings
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Generator, List, Optional, Union
+import json
+import os
 
 import numpy as np
 import torch as th
@@ -375,6 +377,10 @@ class RolloutBuffer(BaseBuffer):
         self.gae_lambda = gae_lambda
         self.gamma = gamma
         self.generator_ready = False
+        self.file_path = './data'
+        if not os.path.exists(self.file_path):
+            os.makedirs(self.file_path)
+
         self.reset()
 
     def reset(self) -> None:
@@ -467,9 +473,26 @@ class RolloutBuffer(BaseBuffer):
         if self.pos == self.buffer_size:
             self.full = True
 
-    def get(self, batch_size: Optional[int] = None) -> Generator[RolloutBufferSamples, None, None]:
+    def get(self, batch_size: Optional[int] = None, polid: Optional[int]= None, is_download:bool=False) -> Generator[RolloutBufferSamples, None, None]:
         assert self.full, ""
         indices = np.random.permutation(self.buffer_size * self.n_envs)
+        # Download the data
+        if is_download:
+            path = self.file_path + '/' + str(polid) + '.json'
+            with open(path, 'a') as f:
+                for i in range(batch_size):
+                    observations = self.observations[i].tolist() if isinstance(self.observations[i], np.ndarray) else self.observations[i]
+                    actions = self.actions[i].tolist() if isinstance(self.actions[i], np.ndarray) else self.actions[i]
+                    rewards = self.rewards[i].tolist() if isinstance(self.rewards[i], np.ndarray) else self.rewards[i]
+                    data = {
+                        'timestep': i,
+                        'observations': observations,
+                        'actions': actions,
+                        'rewards': rewards,
+                    }
+                    # Make sure write in the data in the json 
+                    if self.rewards[i].any():
+                        f.write(json.dumps(data) + '\n')
         # Prepare the data
         if not self.generator_ready:
             _tensor_names = [

@@ -1,0 +1,90 @@
+wandb_version: 1
+
+env_name:
+  desc: null
+  value: coins
+modified_env_config:
+  desc: null
+  value: coins_llm
+human_env_config:
+  desc: null
+  value: coins_human
+num_agents:
+  desc: null
+  value: 5
+num_cpus:
+  desc: null
+  value: 4
+num_envs:
+  desc: null
+  value: 2
+kl_threshold:
+  desc: null
+  value: 0.01
+rollout_len:
+  desc: null
+  value: 1000
+total_timesteps:
+  desc: null
+  value: 10000000
+use_collective_reward:
+  desc: null
+  value: false
+inequity_averse_reward:
+  desc: null
+  value: false
+alpha:
+  desc: null
+  value: 5
+beta:
+  desc: null
+  value: 0.05
+seed:
+  desc: null
+  value: 42
+user_name:
+  desc: null
+  value: '1160677229'
+model:
+  desc: null
+  value: llm
+alg:
+  desc: null
+  value: PPO
+using_same_eval:
+  desc: null
+  value: true
+is_download:
+  desc: null
+  value: true
+_wandb:
+  desc: null
+  value:
+    python_version: 3.10.0
+    cli_version: 0.16.3
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    start_time: 1710264093.165897
+    t:
+      1:
+      - 1
+      - 2
+      - 3
+      - 12
+      - 55
+      2:
+      - 1
+      - 2
+      - 3
+      - 12
+      - 55
+      3:
+      - 13
+      - 16
+      - 23
+      4: 3.10.0
+      5: 0.16.3
+      8:
+      - 5
+      13: linux-x86_64

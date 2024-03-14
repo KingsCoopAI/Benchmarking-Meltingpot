@@ -144,6 +144,7 @@ def parse_args():
     parser.add_argument("--model", type=str, default='baseline')
     parser.add_argument("--alg", type=str, default='PPO', choices=['PPO', 'A2C'])
     parser.add_argument("--using_same_eval", type=bool, default=True)
+    parser.add_argument("--is_download", type=bool, default=False)
     args = parser.parse_args()
     return args
 
@@ -213,7 +214,7 @@ def main(args):
   total_timesteps = args.total_timesteps
   num_agents = env.max_num_agents
   using_same_eval = args.using_same_eval
-
+  is_download = args.is_download
   # Training
   num_cpus = args.num_cpus  # number of cpus
   num_envs = args.num_envs  # number of parallel multi-agent environments
@@ -335,7 +336,8 @@ def main(args):
       policy_kwargs=policy_kwargs,
       tensorboard_log=tensorboard_log,
       verbose=verbose,
-      num_agents=num_agents
+      num_agents=num_agents,
+      is_download=is_download,
   )
   elif alg == "A2C":
     model = stable_baselines3.A2C

@@ -49,6 +49,7 @@ class IndependentPPO(OnPolicyAlgorithm):
         policy_kwargs: Optional[Dict[str, Any]] = None,
         verbose: int = 0,
         device: Union[th.device, str] = "auto",
+        is_download: bool = False
     ):
         self.env = env
         self.num_agents = num_agents
@@ -59,6 +60,7 @@ class IndependentPPO(OnPolicyAlgorithm):
         self.tensorboard_log = tensorboard_log
         self.verbose = verbose
         self._logger = None
+        self.is_download = is_download
         env_fn = lambda: DummyGymEnv(self.observation_space, self.action_space)
         dummy_env = DummyVecEnv([env_fn] * self.num_envs)
         self.policies = [
@@ -82,8 +84,10 @@ class IndependentPPO(OnPolicyAlgorithm):
                 policy_kwargs=policy_kwargs,
                 verbose=verbose,
                 device=device,
+                polid = polid,
+                is_download=self.is_download
             )
-            for _ in range(self.num_agents)
+            for polid in range(self.num_agents)
         ]
 
     def learn(
