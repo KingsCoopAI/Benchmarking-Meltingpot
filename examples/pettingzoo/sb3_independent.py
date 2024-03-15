@@ -281,13 +281,9 @@ def main(args):
 
 
 
-  if using_same_eval:
-    eval_env = parallel_env
-  else:
-    eval_env = utils.parallel_env(
-        max_cycles=rollout_len,
-        env_config=env_config,
-    )
+
+  eval_env = parallel_env
+
   eval_env = ss.observation_lambda_v0(eval_env, lambda x, _: x["RGB"],
                                       lambda s: s["RGB"])
   eval_env = ss.frame_stack_v1(eval_env, num_frames)
@@ -297,7 +293,7 @@ def main(args):
   eval_env = vec_env.VecMonitor(eval_env)
   eval_env = vec_env.VecTransposeImage(eval_env, True)
   
-  eval_freq = 100000 // (num_envs * num_agents)
+  eval_freq = 100000000 // (num_envs * num_agents)
 
   policy_kwargs = dict(
       features_extractor_class=CustomCNN,
