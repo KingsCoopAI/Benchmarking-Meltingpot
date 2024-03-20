@@ -403,9 +403,9 @@ def get_prefabs(
     coin_type_b: str,
     regrow_rate: float = 0.0005,
     reward_self_for_match: float = 1.0,
-    reward_self_for_mismatch: float = -1.0,
+    reward_self_for_mismatch: float = -2.0,
     reward_other_for_match: float = 0.0,
-    reward_other_for_mismatch: float = -0.5,
+    reward_other_for_mismatch: float = 0.0,
 ) -> PrefabConfig:
   """Make `prefabs` (a dictionary mapping names to template game objects)."""
   coin = get_coin(coin_type_a=coin_type_a,
