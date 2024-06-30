@@ -73,7 +73,27 @@ If you are interested in extending Melting Pot, please refer to the
     ```shell
     bash patch.sh
     ```
-
+### Possible Problems
+1. The ‘libcudnn_cnn_infer.so.8‘ problem：
+   
+    ```shell
+    conda install pytorch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 pytorch-cuda=11.7 -c pytorch -c nvidia
+    ```
+2. AttributeError: module 'jax.random' has no attribute 'KeyArray':
+      
+    ```shell
+    pip install chex==0.1.2
+    ```
+3. AttributeError: module 'jax.interpreters.pxla' has no attribute 'ShardedDeviceArray':
+      
+    ```shell
+    pip install flax==0.6.11 jax==0.4.12 jaxlib==0.4.12
+    ```
+4. Stable-Baselines3 (SB3) has transitioned to using Gymnasium internally. In order to use OpenAI Gym environments with SB3, you need to install shimmy:
+      
+    ```shell
+    pip install shimmy>=0.2.1
+    ``` 
 
 ### `pip` install
 
