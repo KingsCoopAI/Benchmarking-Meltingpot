@@ -45,6 +45,36 @@ If you are interested in extending Melting Pot, please refer to the
 
 ## Installation
 
+### Customized Installation
+1.  Clone Melting Pot:
+
+    ```shell
+    git clone -b main https://github.com/google-deepmind/meltingpot
+    cd meltingpot
+    ```
+2.  Create(Activate) a virtual environment, e.g.:
+
+    ```shell
+    conda create -n meltingpot python==3.10
+    ```
+3. Installation:
+
+    ```shell
+    pip install -r examples/requirements.txt
+    ```
+4. Gym Dependencies:
+   
+    ```shell
+    pip install --upgrade pip wheel==0.38.4 setuptools==65.5.0
+    pip install gym==0.21.0
+    ```
+5. Patching:
+   
+    ```shell
+    bash patch.sh
+    ```
+
+
 ### `pip` install
 
 [Melting Pot is available on PyPI](https://pypi.python.org/pypi/dm-meltingpot)
