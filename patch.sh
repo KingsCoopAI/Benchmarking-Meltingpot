@@ -17,5 +17,5 @@ sed -i '182c\
             return self._observations[0][agent]' "$python_folder_name"/site-packages/pettingzoo/utils/conversions.py # judge if the observation is a dict or not.
 sed -i '206s/obss, rews, dones, infos = self.env.step(self._actions)/obss, rews, dones, _, infos = self.env.step(self._actions)/' "$python_folder_name"/site-packages/pettingzoo/utils/conversions.py # let additional dones away
 
-sed -i '311s/if isinstance(space, gym.spaces.Discrete)/if isinstance(space, gymnasium.spaces.Discrete)/' "$python_folder_name"/site-packages/shimmy/openai_gym_compatibility.py
-sed -i '313s/if isinstance(space, gym.spaces.Box)/if isinstance(space, gymnasium.spaces.Box)/' "$python_folder_name"/site-packages/shimmy/openai_gym_compatibility.py
+sed -i '306s/if isinstance(space, gym.spaces.Discrete)/if isinstance(space, gymnasium.spaces.Discrete)/' "$python_folder_name"/site-packages/shimmy/openai_gym_compatibility.py
+sed -i '308s/if isinstance(space, gym.spaces.Box)/if isinstance(space, gymnasium.spaces.Box)/' "$python_folder_name"/site-packages/shimmy/openai_gym_compatibility.py

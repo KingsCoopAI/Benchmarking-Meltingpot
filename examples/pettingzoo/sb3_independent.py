@@ -205,9 +205,9 @@ def main(args):
   set_seed(args.seed)
   str_model = args.model
   env_name = args.env_name
-  llm_env_config = substrate.get_config(args.modified_env_config)
-  modified_env = utils.parallel_env(llm_env_config)
-  human_env_config = substrate.get_config(args.human_env_config)
+  # llm_env_config = substrate.get_config(args.modified_env_config)
+  # modified_env = utils.parallel_env(llm_env_config)
+  # human_env_config = substrate.get_config(args.human_env_config)
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
