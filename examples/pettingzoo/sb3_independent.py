@@ -41,7 +41,7 @@ device = torch.device("cuda") if torch.cuda.is_available() else torch.device(
 def set_seed(seed: int = 42) -> None:
     np.random.seed(seed)
     random.seed(seed)
-    torch.manual_seed(seed)
+    # torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     # When running on the CuDNN backend, two further options must be set
     torch.backends.cudnn.deterministic = True
@@ -81,7 +81,7 @@ def parse_args():
     parser.add_argument(
         "--num-agents",
         type=int,
-        default=5,
+        default=2,
         help="The number of agents",
     )
     parser.add_argument(
@@ -192,8 +192,8 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
   def forward(self, observations) -> torch.Tensor:
     # Convert to tensor, rescale to [0, 1], and convert from
     #   B x H x W x C to B x C x H x W
-    if observations.shape[1] != 12:
-      observations = observations.permute(0, 3, 1, 2)
+    if observations.shape[1] != 18:
+        observations = observations.permute(0, 3, 1, 2)
     features = self.conv(observations)
     features = F.relu(self.fc1(features))
     features = F.relu(self.fc2(features))
@@ -220,7 +220,7 @@ def main(args):
   num_envs = args.num_envs  # number of parallel multi-agent environments
   # number of frames to stack together; use >4 to avoid automatic
   # VecTransposeImage
-  num_frames = 4
+  num_frames = 6
   # output layer of cnn extractor AND shared layer for policy and value
   # functions
   features_dim = 128
@@ -309,8 +309,8 @@ def main(args):
 
 
   run = wandb.init(config=args,
-                         project="MeltingPot_pytorch",
-                         entity=args.user_name, 
+                         project="BenchMark",
+                         entity="melting-pot", 
                          notes=socket.gethostname(),
                          name=str(env_name) +"_"+ str(str_model) + "_" + str(args.seed),
                          group=str(env_name) +"_"+ str(str_model),
