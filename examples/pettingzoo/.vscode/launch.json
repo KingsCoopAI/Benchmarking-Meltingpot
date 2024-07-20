@@ -9,15 +9,15 @@
             "name": "Python: main",
             "type": "python",
             "request": "launch",
-            "program": "sb3_independent.py",
+            "program": "sb3_train.py",
             // "program": "evaluation.py",
             "console": "integratedTerminal",
             "python": "/home/shuqingshi/miniconda3/envs/meltingpot/bin/python",
             "justMyCode": false,
-            "args": ["--model", 
-                    "llm",
-                    "--is_download",
-                    "True",]
+            // "args": ["--model", 
+            //         "llm",
+            //         "--is_download",
+            //         "True",]
 
         },
     ]

@@ -190,7 +190,8 @@ class CustomCNN(torch_layers.BaseFeaturesExtractor):
   def forward(self, observations) -> torch.Tensor:
     # Convert to tensor, rescale to [0, 1], and convert from
     #   B x H x W x C to B x C x H x W
-    observations = observations.permute(0, 3, 1, 2)
+    if observations.shape[1] != 18:
+      observations = observations.permute(0, 3, 1, 2)
     features = self.conv(observations)
     features = F.relu(self.fc1(features))
     features = F.relu(self.fc2(features))
@@ -202,9 +203,9 @@ def main(args):
   set_seed(args.seed)
   model = args.model
   env_name = args.env_name
-  llm_env_config = substrate.get_config(args.modified_env_config)
-  modified_env = utils.parallel_env(llm_env_config)
-  human_env_config = substrate.get_config(args.human_env_config)
+  # llm_env_config = substrate.get_config(args.modified_env_config)
+  # modified_env = utils.parallel_env(llm_env_config)
+  # human_env_config = substrate.get_config(args.human_env_config)
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
@@ -217,7 +218,7 @@ def main(args):
   num_envs = args.num_envs  # number of parallel multi-agent environments
   # number of frames to stack together; use >4 to avoid automatic
   # VecTransposeImage
-  num_frames = 4
+  num_frames = 6
   # output layer of cnn extractor AND shared layer for policy and value
   # functions
   features_dim = 128
