@@ -110,7 +110,7 @@ def parse_args():
     parser.add_argument(
         "--total-timesteps",
         type=int,
-        default=5e8,
+        default=1e8,
         help="Number of environment timesteps",
     )
     parser.add_argument(
