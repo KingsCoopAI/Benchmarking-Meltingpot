@@ -311,8 +311,8 @@ def main(args):
 
 
   run = wandb.init(config=args,
-                         project="MeltingPot_pytorch",
-                         entity=args.user_name, 
+                         project="BenchMark",
+                         entity="melting-pot", 
                          notes=socket.gethostname(),
                          name=str(env_name) +"_"+ str(model) + "_" + str(args.seed),
                          group=str(env_name) +"_"+ str(model),
