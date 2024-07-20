@@ -209,7 +209,7 @@ def main(args):
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
-  total_timesteps = 4000
+  total_timesteps = 10000
   num_agents = env.max_num_agents
   using_same_eval = args.using_same_eval
 
@@ -355,7 +355,7 @@ def main(args):
     model = stable_baselines3.PPO.load(model_path, env=env)
   eval_callback = callbacks.EvalCallback(
       eval_env, eval_freq=eval_freq, best_model_save_path=tensorboard_log)
-  model.learn(total_timesteps=total_timesteps, callback=eval_callback)
+  model.learn(total_timesteps=total_timesteps)
 
   logdir = model.logger.dir
   model.save(logdir + "/model")

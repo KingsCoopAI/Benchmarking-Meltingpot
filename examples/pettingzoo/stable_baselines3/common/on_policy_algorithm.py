@@ -276,7 +276,6 @@ class OnPolicyAlgorithm(BaseAlgorithm):
                     wandb.log({f"SW_ep_rew_mean": safe_mean([ep_info["r"] for ep_info in self.ep_info_buffer])}, step=self.num_timesteps)
                     wandb.log({f"rollout/ep_len_mean": safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer])}, step=self.num_timesteps)
                 wandb.log({f"time/fps": fps}, step=self.num_timesteps)
-                wandb.log({f"time/fps": fps}, step=self.num_timesteps)
                 wandb.log({f"time/time_elapsed": int(time_elapsed)}, step=self.num_timesteps)
                 wandb.log({f"time/total_timesteps": self.num_timesteps}, step=self.num_timesteps)
                 wandb.log({f"rollout/ep_len_mean": safe_mean([ep_info["l"] for ep_info in self.ep_info_buffer])}, step=self.num_timesteps)
