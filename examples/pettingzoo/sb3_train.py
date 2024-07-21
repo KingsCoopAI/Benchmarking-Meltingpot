@@ -209,7 +209,7 @@ def main(args):
   env_config = substrate.get_config(env_name)
   env = utils.parallel_env(env_config)
   rollout_len = 1000
-  total_timesteps = 10000
+  total_timesteps = args.total_timesteps
   num_agents = env.max_num_agents
   using_same_eval = args.using_same_eval
 
