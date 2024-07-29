@@ -66,6 +66,7 @@ If you are interested in extending Melting Pot, please refer to the
    
     ```shell
     pip install --upgrade pip wheel==0.38.4 setuptools==65.5.0
+    pip install --upgrade pip==23.0
     pip install gym==0.21.0
     ```
 5. Patching:
