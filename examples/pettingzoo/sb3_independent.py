@@ -309,8 +309,8 @@ def main(args):
 
 
   run = wandb.init(config=args,
-                         project="BenchMark",
-                         entity="melting-pot", 
+                         project="BenchMark_Meltingpot",
+                         entity="Coop_AI", 
                          notes=socket.gethostname(),
                          name=str(env_name) +"_"+ str(str_model) + "_" + str(args.seed),
                          group=str(env_name) +"_"+ str(str_model),
