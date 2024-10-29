@@ -28,6 +28,8 @@ import argparse
 import random
 import numpy as np
 
+from ray.tune.callback import Callback
+
 def setup_gpu():
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -83,7 +85,7 @@ def parse_args():
     parser.add_argument(
         "--num-workers",
         type=int,
-        default=90,
+        default=25,
         help="The number of workers",
     )
     parser.add_argument(
@@ -149,7 +151,7 @@ def get_config(
     alg: str = 'PPO',
     num_rollout_workers: int = 2,
     rollout_fragment_length: int = 2000,
-    train_batch_size: int = 131072,  # Doubled
+    train_batch_size: int = 131072 * 2, 
     fcnet_hiddens=(512, 512, 512),  # Increased depth and width
     post_fcnet_hiddens=(512, 512),  # Increased depth and width
     lstm_cell_size: int = 512,  # Increased
@@ -159,6 +161,7 @@ def get_config(
     lr: float = 3e-4,  # Explicitly set learning rate
     vf_clip_param: float = 10.0,
     clip_param: float = 0.3,
+    should_checkpoint: bool = True
 ):
   """Get the configuration for running an agent on a substrate using RLLib.
 
@@ -187,6 +190,7 @@ def get_config(
     config = appo.APPOConfig()
   # Number of arenas.
   config.num_rollout_workers = num_rollout_workers
+  config.num_cpus_per_worker = 1
   # This is to match our unroll lengths.
   config.rollout_fragment_length = 'auto'
   # Total (time x batch) timesteps on the learning update.
@@ -264,54 +268,173 @@ def get_config(
   config.model["lstm_use_prev_action"] = True
   config.model["lstm_use_prev_reward"] = False
   config.model["lstm_cell_size"] = lstm_cell_size
-  
 
   return config
 
+# Custom Callback for Periodic Checkpointing
+class CustomCheckpointCallback(Callback):
+    def __init__(self, checkpoint_freq, checkpoint_dir=None):
+        self.checkpoint_freq = checkpoint_freq
+        if checkpoint_dir is None:
+            self.checkpoint_dir = "./checkpoints"
+        else:
+            self.checkpoint_dir = checkpoint_dir
+        os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1):
-  """Trains a model.
+    def on_trial_result(self, iteration, trials, trial, result, **info):
+        """Called after receiving a trial result."""
+        if result["training_iteration"] % self.checkpoint_freq == 0:
+            checkpoint_path = os.path.join(
+                self.checkpoint_dir,
+                f"checkpoint_{result['training_iteration']}"
+            )
+            print(f"Attempting to save checkpoint at iteration {result['training_iteration']} to {checkpoint_path}")
+            
+            # 使用 trial.checkpoint 属性
+            checkpoint = trial.checkpoint
+            if checkpoint:
+                try:
+                    os.makedirs(checkpoint_path, exist_ok=True)
+                    checkpoint.to_directory(checkpoint_path)
+                    
+                    if os.path.exists(checkpoint_path):
+                        checkpoint_files = os.listdir(checkpoint_path)
+                        print(f"Checkpoint saved successfully. Files: {checkpoint_files}")
+                        size_mb = sum(os.path.getsize(os.path.join(checkpoint_path, f)) 
+                                    for f in checkpoint_files) / 1024 / 1024
+                        print(f"Checkpoint size: {size_mb:.2f} MB")
+                    else:
+                        print("Warning: Checkpoint directory was not created!")
+                except Exception as e:
+                    print(f"Error saving checkpoint: {str(e)}")
+            else:
+                print(f"No checkpoint available at iteration {result['training_iteration']}")
 
-  Args:
-    config: model config
-    num_iterations: number of iterations ot train for.
+def get_next_run_id(base_dir):
+    """Get the next available run ID by checking existing directories"""
+    if not os.path.exists(base_dir):
+        return 0
+    
+    # Get all directories that end with a number
+    existing_runs = [d for d in os.listdir(base_dir) 
+                    if os.path.isdir(os.path.join(base_dir, d)) 
+                    and d.split('_')[-1].isdigit()]
+    if not existing_runs:
+        return 0
+    
+    # Extract run IDs and get the next one
+    run_ids = [int(d.split('_')[-1]) for d in existing_runs]
+    return max(run_ids) + 1
 
-  Returns:
-    Training results.
-  """
-  tune.register_env("meltingpot", utils.env_creator)
-  ray.init(num_cpus=num_cpus, num_gpus=config.num_gpus,resources={"accelerator_type:A100":1}, local_mode=local_mode)
-  stop = {
-      "training_iteration": num_iterations,
-  }
-  alg = alg
-  if use_wandb:
-    return tune.Tuner(
-      alg,
-      param_space=config.to_dict(),
-        run_config=air.RunConfig(stop=stop, verbose=1,
-                               callbacks=[WandbLoggerCallback(project="MeltingPot-Benchmarking")],
-        )).fit()
-  else:
-    return tune.Tuner(
-      alg,
-      param_space=config.to_dict(),
-        run_config=air.RunConfig(stop=stop, verbose=1),
-        ).fit()
+def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkpoint_freq=10):
+    """Trains a model with periodic checkpointing.
+    
+    Args:
+        config: Model configuration
+        alg: Algorithm name (PPO, A3C, etc.)
+        local_mode: Whether to run in local mode
+        use_wandb: Whether to use Weights & Biases logging
+        num_cpus: Number of CPUs to use
+        num_iterations: Total number of training iterations
+        checkpoint_freq: How often to save checkpoints
+        
+    Returns:
+        tuple: (training_results, run_id)
+    """
+    tune.register_env("meltingpot", utils.env_creator)
+    ray.init(num_cpus=num_cpus, num_gpus=config.num_gpus, resources={"accelerator_type:A100":1}, local_mode=local_mode)
+    
+    # Base checkpoint directory path
+    base_checkpoint_dir = os.path.join("checkpoints", config.env_config['substrate'])
+    run_name = f"{alg}_run_{run_id}"
+    checkpoint_dir = os.path.join(base_checkpoint_dir, run_name)
+    
+    # Get unique run ID for this training session
+    run_id = get_next_run_id(base_checkpoint_dir)
+    
+    # Create checkpoint directory with run ID
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    print(f"Created checkpoint directory at: {checkpoint_dir}")
+    
+    # Configure the training run
+    run_config = air.RunConfig(
+        stop={"training_iteration": num_iterations},
+        callbacks=[CustomCheckpointCallback(checkpoint_freq, checkpoint_dir)],
+        checkpoint_config=air.CheckpointConfig(
+            num_to_keep=5,
+            checkpoint_frequency=checkpoint_freq,
+            checkpoint_at_end=True,
+            checkpoint_score_attribute="episode_reward_mean",
+        ),
+        local_dir=base_checkpoint_dir,
+        name=run_name,
+        sync_config=air.SyncConfig(
+            sync_artifacts=True
+        )
+    )
 
+    # Add WandB logging if requested
+    if use_wandb:
+        run_config.callbacks.append(WandbLoggerCallback(project="MeltingPot-Benchmarking"))
+
+    # Create and run the tuner
+    tuner = tune.Tuner(
+        alg,
+        param_space=config.to_dict(),
+        run_config=run_config
+    )
+    
+    return tuner.fit(), run_id
 
 def main(args):
-  set_seed(args.seed)
-  config = get_config(
-      substrate_name=args.env_name,
-      num_rollout_workers=args.num_workers,
-      alg=args.alg,
-      use_lstm=args.use_lstm,
-  )
-  results = train(config, alg=args.alg, local_mode=args.local_mode, use_wandb=args.use_wandb, num_cpus=args.num_cpus, num_iterations=args.total_iterations)
-  print(results)
-  assert results.num_errors == 0
+    # Set random seed for reproducibility
+    set_seed(args.seed)
+    
+    # Get model configuration
+    config = get_config(
+        substrate_name=args.env_name,
+        num_rollout_workers=args.num_workers,
+        alg=args.alg,
+        use_lstm=args.use_lstm,
+    )
+    
+    # Train the model
+    results, run_id = train(
+        config,
+        alg=args.alg,
+        local_mode=args.local_mode,
+        use_wandb=args.use_wandb,
+        num_cpus=args.num_cpus,
+        num_iterations=args.total_iterations,
+        checkpoint_freq=10
+    )
+    
+    print(results)
+    assert results.num_errors == 0
 
+    # Save and verify final checkpoint
+    final_checkpoint_dir = f"./final_checkpoints/{args.env_name}_{args.alg}_run_{run_id}"
+    os.makedirs(final_checkpoint_dir, exist_ok=True)
+    print(f"Created final checkpoint directory at: {final_checkpoint_dir}")
+    
+    # Get best result and save its checkpoint
+    best_result = results.get_best_result()
+    if best_result:
+        checkpoint = best_result.checkpoint
+        if checkpoint:
+            final_checkpoint_path = os.path.join(final_checkpoint_dir, f"final_checkpoint_{args.total_iterations}")
+            os.makedirs(final_checkpoint_path, exist_ok=True)
+            checkpoint.to_directory(final_checkpoint_path)
+            
+            # Verify the final checkpoint was saved correctly
+            if os.path.exists(final_checkpoint_path):
+                checkpoint_files = os.listdir(final_checkpoint_path)
+                print(f"Final checkpoint saved successfully. Files in checkpoint directory: {checkpoint_files}")
+                print(f"Final checkpoint size: {sum(os.path.getsize(os.path.join(final_checkpoint_path, f)) for f in checkpoint_files) / 1024 / 1024:.2f} MB")
+            else:
+                print("Warning: Final checkpoint directory was not created!")
+    else:
+        print("No best result found. Final checkpoint not saved.")
 
 if __name__ == "__main__":
-  main(args=parse_args())
+    main(args=parse_args())
