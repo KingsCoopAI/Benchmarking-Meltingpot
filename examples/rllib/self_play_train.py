@@ -29,6 +29,7 @@ import random
 import numpy as np
 
 from ray.tune.callback import Callback
+from ray.train import SyncConfig
 
 def setup_gpu():
     if torch.cuda.is_available():
@@ -368,7 +369,7 @@ def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkp
         ),
         local_dir=base_checkpoint_dir,
         name=run_name,
-        sync_config=air.SyncConfig(
+        sync_config=SyncConfig(
             sync_artifacts=True
         )
     )
