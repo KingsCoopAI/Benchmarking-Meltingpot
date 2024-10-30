@@ -347,11 +347,11 @@ def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkp
     
     # Base checkpoint directory path
     base_checkpoint_dir = os.path.join("checkpoints", config.env_config['substrate'])
-    run_name = f"{alg}_run_{run_id}"
-    checkpoint_dir = os.path.join(base_checkpoint_dir, run_name)
     
     # Get unique run ID for this training session
     run_id = get_next_run_id(base_checkpoint_dir)
+    run_name = f"{alg}_run_{run_id}"
+    checkpoint_dir = os.path.join(base_checkpoint_dir, run_name)
     
     # Create checkpoint directory with run ID
     os.makedirs(checkpoint_dir, exist_ok=True)
