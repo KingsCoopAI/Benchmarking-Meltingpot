@@ -29,7 +29,7 @@ import random
 import numpy as np
 
 from ray.tune.callback import Callback
-from ray.train import SyncConfig
+from ray.tune.syncer import SyncConfig
 
 def setup_gpu():
     if torch.cuda.is_available():
