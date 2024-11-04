@@ -16,4 +16,6 @@ module load cuda
     --use_wandb 1 \
     --num-cpus 100 \
     --num-workers 25 \
-    --env-name 'clean_up' \
+    --env-name 'coins' \
+    --continue_training \
+    --continue_training_path /scratch/prj/inf_du/ziyan/benchmarking_meltingpot/Benchmarking-Meltingpot/examples/rllib/checkpoints/coins/PPO_run_2/PPO_meltingpot_29688_00000_0_2024-10-30_13-59-21/checkpoint_000370

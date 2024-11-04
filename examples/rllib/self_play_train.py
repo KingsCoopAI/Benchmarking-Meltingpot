@@ -144,6 +144,10 @@ def parse_args():
     parser.add_argument("--use_lstm", type=bool, default=False)
     parser.add_argument("--user_name", type=str, default="k23048755")
     parser.add_argument("--alg", type=str, default='PPO', choices=['PPO', 'A3C', 'APPO'])
+    parser.add_argument("--continue_training", action="store_true",
+                      help="Whether to continue training from a checkpoint")
+    parser.add_argument("--continue_training_path", type=str, default=None,
+                      help="Path to the checkpoint to continue training from")
     args = parser.parse_args()
     return args
 
@@ -327,23 +331,12 @@ def get_next_run_id(base_dir):
     run_ids = [int(d.split('_')[-1]) for d in existing_runs]
     return max(run_ids) + 1
 
-def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkpoint_freq=10):
-    """Trains a model with periodic checkpointing.
-    
-    Args:
-        config: Model configuration
-        alg: Algorithm name (PPO, A3C, etc.)
-        local_mode: Whether to run in local mode
-        use_wandb: Whether to use Weights & Biases logging
-        num_cpus: Number of CPUs to use
-        num_iterations: Total number of training iterations
-        checkpoint_freq: How often to save checkpoints
-        
-    Returns:
-        tuple: (training_results, run_id)
-    """
+def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkpoint_freq=10, 
+          continue_training=False, continue_training_path=None):
+    """Trains a model with periodic checkpointing."""
     tune.register_env("meltingpot", utils.env_creator)
-    ray.init(num_cpus=num_cpus, num_gpus=config.num_gpus, resources={"accelerator_type:A100":1}, local_mode=local_mode)
+    ray.init(num_cpus=num_cpus, num_gpus=config.num_gpus, resources={"accelerator_type:A100":1}, 
+            local_mode=local_mode)
     
     # Base checkpoint directory path
     base_checkpoint_dir = os.path.join("checkpoints", config.env_config['substrate'])
@@ -356,7 +349,7 @@ def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkp
     # Create checkpoint directory with run ID
     os.makedirs(checkpoint_dir, exist_ok=True)
     print(f"Created checkpoint directory at: {checkpoint_dir}")
-    
+
     # Configure the training run
     run_config = air.RunConfig(
         stop={"training_iteration": num_iterations},
@@ -374,16 +367,24 @@ def train(config, alg, local_mode, use_wandb, num_cpus, num_iterations=1, checkp
         )
     )
 
-    # Add WandB logging if requested
     if use_wandb:
         run_config.callbacks.append(WandbLoggerCallback(project="MeltingPot-Benchmarking"))
 
-    # Create and run the tuner
-    tuner = tune.Tuner(
-        alg,
-        param_space=config.to_dict(),
-        run_config=run_config
-    )
+    # Create tuner with restore path if continuing training
+    if continue_training and continue_training_path:
+        print(f"Continuing training from checkpoint: {continue_training_path}")
+        tuner = tune.Tuner.restore(
+            continue_training_path,
+            trainable=alg,
+            param_space=config.to_dict(),
+            run_config=run_config
+        )
+    else:
+        tuner = tune.Tuner(
+            alg,
+            param_space=config.to_dict(),
+            run_config=run_config
+        )
     
     return tuner.fit(), run_id
 
@@ -401,13 +402,15 @@ def main(args):
     
     # Train the model
     results, run_id = train(
-        config,
+        config=config,
         alg=args.alg,
         local_mode=args.local_mode,
         use_wandb=args.use_wandb,
         num_cpus=args.num_cpus,
         num_iterations=args.total_iterations,
-        checkpoint_freq=10
+        checkpoint_freq=10,
+        continue_training=args.continue_training,
+        continue_training_path=args.continue_training_path
     )
     
     print(results)

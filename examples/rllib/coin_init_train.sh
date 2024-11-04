@@ -16,4 +16,4 @@ module load cuda
     --use_wandb 1 \
     --num-cpus 100 \
     --num-workers 25 \
-    --env-name 'clean_up' \
+    --env-name 'coins' \
